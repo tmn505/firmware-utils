@@ -1,0 +1,41 @@
+name: Build test on Ubuntu and MacOS
+
+on:
+  push:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        c_compiler: [gcc, clang]
+
+    steps:
+      - name: Clone project source
+        uses: actions/checkout@v4
+
+      - name: Clone OpenWrt source
+        uses: actions/checkout@v4
+        with:
+          repository: openwrt/openwrt
+          path: openwrt
+
+      - name: Configure
+        run: >
+          CFLAGS="-I${{ github.workspace }}/openwrt/tools/include -I/usr/local/opt/openssl/include"
+          cmake -B ${{ github.workspace }}/build
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+          -S ${{ github.workspace }}
+
+      - name: Build
+        run: >
+          cmake --build ${{ github.workspace }}/build --config Release
